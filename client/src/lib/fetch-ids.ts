@@ -16,10 +16,36 @@ const queue: Request[] = [];
 
 let timeoutRef = 0;
 
+const isLocalStorageAvailable = (): boolean =>  {
+    var test = 'test';
+    try {
+        localStorage.setItem(test, test);
+        localStorage.removeItem(test);
+        return true;
+    } catch(e) {
+        return false;
+    }
+}
+
 const fetchIds = async (reqs: Request[]) => {
+  let localStorageAvailable = isLocalStorageAvailable();
+  let found = new Set();
+  if (localStorageAvailable) {
+    for (let req of reqs) {
+      let item = localStorage.getItem(req.name);
+      if (!!item) {
+        found.add(req.name);
+        req.resolve(parseInt(item));
+      }
+    }
+  }
+  if (found.size >= reqs.keys.length) {
+    // All capsuleer IDs found in cache, not calling ESI.
+    return;
+  }
   const resp = await fetch(`https://esi.evetech.net/latest/universe/ids/`, {
     method: "post",
-    body: JSON.stringify(reqs.map((req) => req.name)),
+    body: JSON.stringify(reqs.filter(req => !found.has(req.name)).map((req) => req.name)),
   });
   if (!resp.ok) {
     throw Error(resp.statusText);
@@ -30,6 +56,9 @@ const fetchIds = async (reqs: Request[]) => {
     if (!req) {
       console.warn(`fetchIds: couldn't find response for name "${char.name}"`);
       return;
+    }
+    if (localStorageAvailable) {
+      localStorage.setItem(char.name, char.id.toString());
     }
     req.resolve(char.id);
   });
