@@ -1,7 +1,8 @@
-FROM golang:1.15-alpine
+FROM golang:1.21.6-alpine
 
 RUN apk add --no-cache build-base git 
-RUN go get github.com/pilu/fresh
+RUN go install github.com/pilu/fresh@latest
+
 
 WORKDIR /usr/local/src
 ADD . /usr/local/src
