@@ -27,6 +27,17 @@ export const Row = memo((props: Props) => {
     update: _update,
   } = props;
 
+  const isLocalStorageAvailable = (): boolean =>  {
+    var test = 'test';
+    try {
+        localStorage.setItem(test, test);
+        localStorage.removeItem(test);
+        return true;
+    } catch(e) {
+        return false;
+    }
+  }
+
   const update: Props["update"] = useCallback(
     (data) => {
       if (mountedRef.current) {
@@ -43,6 +54,7 @@ export const Row = memo((props: Props) => {
     };
   });
 
+  /** Resolve a CCP ID to Character, Corporation, or Alliance name. */
   useEffect(() => {
     if (id) {
       return;
@@ -50,47 +62,89 @@ export const Row = memo((props: Props) => {
     fetchId(name).then((id) => update({ name, id }));
   }, [name, id, update]);
 
+  /** Get Capsuleer's Corporation and Alliance affiliations. */
   useEffect(() => {
     if (!id || corpId) {
       return;
     }
+    let localStorageIsAvailable = isLocalStorageAvailable();
+    if (localStorageIsAvailable) {
+      let affiliation = localStorage.getItem(`affil-${id}`);
+      if (!!affiliation) {
+        let affil = JSON.parse(affiliation);
+        update({ name, corpId: affil.corpId, allyId: affil.allyId, });
+        return;
+      }
+    }
     fetchAffiliation(id).then((affiliation) => {
       const { corporation_id: corpId, alliance_id: allyId } = affiliation;
-      update({
-        name,
-        corpId,
-        allyId,
-      });
+      update({ name, corpId, allyId, });
+      if (localStorageIsAvailable) {
+        localStorage.setItem("affil-" + name, JSON.stringify({corpId, allyId}));
+      }
     });
   }, [name, id, corpId, update]);
 
+  /** Resolve Corporation Name from ID. */
   useEffect(() => {
     if (!corpId || corpName) {
       return;
+    }
+    let localStorageIsAvailable = isLocalStorageAvailable();
+    if (localStorageIsAvailable) {
+      let corpName = localStorage.getItem(`${corpId}`);
+      if (!!corpName) {
+        update({ name, corpName });
+        return;
+      }
     }
     fetchName(corpId).then((corpName) => {
       update({ name, corpName });
     });
   }, [name, corpId, corpName, update]);
 
+  /** Resolve Alliance Name from ID */
   useEffect(() => {
     if (!allyId || allyName) {
       return;
+    }
+    let localStorageIsAvailable = isLocalStorageAvailable();
+    if (localStorageIsAvailable) {
+      let allianceName = localStorage.getItem(`${allyId}`);
+      if (!!allianceName) {
+        update({ name, allyName: allianceName });
+        return;
+      }
     }
     fetchName(allyId).then((allyName) => {
       update({ name, allyName });
     });
   }, [name, allyId, allyName, update]);
 
+  /** Get stats for Capsuleer. */
   useEffect(() => {
     if (!id || dangerRatio) {
       return;
+    }
+    let localStorageIsAvailable = isLocalStorageAvailable();
+    if (localStorageIsAvailable) {
+      let stats = localStorage.getItem(`stats-${id}`)
+      if (!!stats){
+        update({
+          name,
+          ...(JSON.parse(stats)),
+        });
+        return;
+      }
     }
     fetchStats(id).then((stats) => {
       update({
         name,
         ...stats,
       });
+      if (localStorageIsAvailable) {
+        localStorage.setItem(`stats-${id}`, JSON.stringify(stats));
+      }
     });
   }, [name, id, dangerRatio, update]);
 
