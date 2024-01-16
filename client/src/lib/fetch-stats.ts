@@ -23,38 +23,37 @@ setInterval(async () => {
   if (!req) {
     return;
   }
-  let resp;
-  try {
-    resp = await fetch(
-      `https://zkillboard.com/api/stats/characterID/${req.id}/`,
-      {
-        headers: {
-          origin: window.location.hostname,
-        },
-      }
-    );
-  } catch (err) {
+  await fetch(
+    `https://zkillboard.com/api/stats/characterID/${req.id}/`,
+    {
+      headers: {
+        origin: window.location.hostname,
+      },
+    }
+  )
+  .then(async (resp) => {
+    if (!resp.ok) {
+      throw Error(`Bad status ${resp.status}`);
+    }
+    return resp.json();
+  }).then(resp => {
+    const {
+      dangerRatio,
+      gangRatio,
+      shipsDestroyed,
+      shipsLost,
+      topLists,
+    } = resp;
+    const ships = topLists
+      .find(({ type }: { type: string }) => type === "shipType")?.values
+      .map(({ id, name }: { id: number; name: string }) => ({ id, name, }));
+    req.resolve({ dangerRatio, gangRatio, shipsDestroyed, shipsLost, ships });
+  })
+  .catch(() => {
     console.warn("Fetch failed, back to the end of the queue");
     queue.push(req);
     return;
-  }
-  if (!resp.ok) {
-    throw Error(`Bad status ${resp.status}`);
-  }
-  const {
-    dangerRatio,
-    gangRatio,
-    shipsDestroyed,
-    shipsLost,
-    topLists,
-  } = await resp.json();
-  const ships = topLists
-    .find(({ type }: { type: string }) => type === "shipType")
-    ?.values.map(({ id, name }: { id: number; name: string }) => ({
-      id,
-      name,
-    }));
-  req.resolve({ dangerRatio, gangRatio, shipsDestroyed, shipsLost, ships });
+  });
 }, 1000);
 
 export const schedule = (id: number) => {
