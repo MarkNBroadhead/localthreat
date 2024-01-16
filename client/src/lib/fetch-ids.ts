@@ -16,17 +16,6 @@ const queue: Request[] = [];
 
 let timeoutRef = 0;
 
-const isLocalStorageAvailable = (): boolean =>  {
-  var test = 'test';
-  try {
-      localStorage.setItem(test, test);
-      localStorage.removeItem(test);
-      return true;
-  } catch(e) {
-      return false;
-  }
-}
-
 /**
  * Resolve a set of names to CCP IDs
  * @see https://esi.evetech.net/ui/#/Universe/post_universe_ids
@@ -54,18 +43,6 @@ const fetchIds = async (reqs: Request[]) => {
 
 export const schedule = (name: string) => {
   clearTimeout(timeoutRef);
-
-  let localStorageIsAvailable = isLocalStorageAvailable();
-  if (localStorageIsAvailable) {
-    let id = localStorage.getItem(`${name}`);
-    if (!!id) {
-      return new Promise<number>((resolve) => {
-        if (!!id)  {
-          resolve(parseInt(id));
-        }
-      })
-    }
-  }
 
   timeoutRef = setTimeout(() => {
     fetchIds(queue.splice(0, queue.length));

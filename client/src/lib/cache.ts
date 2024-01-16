@@ -11,21 +11,18 @@ export class ApiCache {
     }
   }
 
-  public set = (id: string, value: string) => {
+  public set(id: string, value: string) {
     if (this.isLocalStorageAvailable()) {
       localStorage.setItem(id, value);
     }
   }
 
-  public get = (id: string) => {
+  public get(id: string) {
     if (this.isLocalStorageAvailable()) {
       let value = localStorage.getItem(id);
       if (!!value) {
-        return JSON.parse(value);
+        return value;
       }
     }
-  }
-
-  public recordExists = () => {
   }
 }
